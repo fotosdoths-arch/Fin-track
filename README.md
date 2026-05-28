@@ -1,5 +1,3 @@
-[index.html.html](https://github.com/user-attachments/files/28367014/index.html.html)
-# Fin-track<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
