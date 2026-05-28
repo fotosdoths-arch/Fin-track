@@ -1,4 +1,4 @@
-[index.html.html](https://github.com/user-attachments/files/28367623/index.html.html)
+[index.html](https://github.com/user-attachments/files/28367787/index.html)
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -909,13 +909,14 @@ function renderTxItems(container,txs){
   container.innerHTML=txs.map(t=>{
     const c=getCat(t.category);
     const d=new Date(t.date+'T12:00');
-    const amtColor=t.type==='income'?'var(--green)':'var(--red)';
-    const sign=t.type==='income'?'+':'-';
+    const isNegIncome = t.type==='income' && t.amount<0;
+    const amtColor = t.type==='expense' ? 'var(--red)' : (isNegIncome ? 'var(--amber)' : 'var(--green)');
+    const sign = t.amount<0 ? '-' : (t.type==='income' ? '+' : '-');
     return`<div class="tx-item">
       <div class="tx-icon" style="background:${c.color}22">${c.icon}</div>
-      <div class="tx-info"><div class="tx-name">${t.description}</div><div class="tx-cat">${c.name}</div></div>
+      <div class="tx-info"><div class="tx-name">${t.description}</div><div class="tx-cat">${c.name}${isNegIncome?' · abatimento':''}</div></div>
       <div class="tx-date">${d.toLocaleDateString('pt-BR')}</div>
-      <div class="tx-amount" style="color:${amtColor}">${sign} ${fmt(t.amount)}</div>
+      <div class="tx-amount" style="color:${amtColor}">${sign} ${fmt(Math.abs(t.amount))}</div>
       <div class="tx-actions">
         <button class="tx-btn edit" onclick="openModal('${t.id}')" title="Editar">✏️</button>
         <button class="tx-btn del" onclick="delTx('${t.id}')" title="Excluir">🗑</button>
@@ -1061,8 +1062,7 @@ function handleFile(file){
         if(!row){skipped.push(idx);return}
         const rawDate=row[cDia],rawTipo=String(row[cTipo]||'').trim(),rawDept=String(row[cDept]||'').trim(),rawValor=row[cValor],rawDesc=String(row[cDesc]||'').trim();
         if(!rawDate||rawValor==null||isNaN(Number(rawValor))){skipped.push(idx);return}
-        const rawNum=Number(rawValor);
-        const amount=Math.abs(rawNum); if(amount===0){skipped.push(idx);return}
+        const rawNum=Number(rawValor), amount=rawNum; if(amount===0){skipped.push(idx);return}
         let dateStr='';
         if(rawDate instanceof Date&&!isNaN(rawDate)){const y=rawDate.getFullYear(),m=String(rawDate.getMonth()+1).padStart(2,'0'),d=String(rawDate.getDate()).padStart(2,'0');dateStr=`${y}-${m}-${d}`}
         else if(typeof rawDate==='number'){const d=new Date(Math.round((rawDate-25569)*86400*1000));if(!isNaN(d))dateStr=d.toISOString().split('T')[0]}
@@ -1070,9 +1070,8 @@ function handleFile(file){
         if(!dateStr){skipped.push(idx);return}
         const tipoN=norm(rawTipo); let type='expense';
         if(/recebid|entrada|receita|income/.test(tipoN)) type='income';
-        // valor negativo no excel → sempre despesa; valor positivo sem tipo → receita
-        if(rawNum<0) type='expense';
-        else if(!rawTipo.trim() && rawNum>0) type='income';
+        // valor negativo preserva o tipo declarado na coluna — apenas mantém o sinal real
+        // (ex: Recebido com valor negativo = abatimento de receita, não vira despesa)
         const deptN=norm(rawDept); let catId=null;
         for(const c of allExisting){const cn=norm(c.name);if(deptN===cn){catId=c.id;break}if(deptN.length>=4&&cn.length>=4&&(deptN.startsWith(cn.slice(0,5))||cn.startsWith(deptN.slice(0,5)))){catId=c.id;break}}
         if(!catId){catId='imp_'+slugify(rawDept);if(!newCatMap[catId])newCatMap[catId]={id:catId,name:rawDept.trim(),type,icon:'🏷️',color:randomColor()}}
@@ -1086,7 +1085,11 @@ function handleFile(file){
       document.getElementById('imp-income').textContent=parsed.filter(t=>t.type==='income').length;
       document.getElementById('imp-expense').textContent=parsed.filter(t=>t.type==='expense').length;
       document.getElementById('imp-skip').textContent=skipped.length;
-      document.getElementById('import-tbody').innerHTML=parsed.slice(0,20).map(t=>{const d=new Date(t.date+'T12:00'),color=t.type==='income'?'var(--green)':'var(--red)',sign=t.type==='income'?'+':'-';return`<tr><td>${d.toLocaleDateString('pt-BR')}</td><td style="color:${color}">${t.type==='income'?'Receita':'Despesa'}</td><td>${getCat(t.category).name||t.category}</td><td style="color:${color};font-family:DM Mono">${sign} ${fmt(t.amount)}</td><td>${t.description}</td></tr>`}).join('');
+      document.getElementById('import-tbody').innerHTML=parsed.slice(0,20).map(t=>{
+        const d=new Date(t.date+'T12:00'),color=t.type==='income'?(t.amount>=0?'var(--green)':'var(--amber)'):'var(--red)';
+        const sign=t.amount>=0?(t.type==='income'?'+':'-'):'-';
+        const absAmt=Math.abs(t.amount);
+        return`<tr><td>${d.toLocaleDateString('pt-BR')}</td><td style="color:${color}">${t.type==='income'?'Receita':'Despesa'}${t.amount<0?' (-)':''}</td><td>${getCat(t.category).name||t.category}</td><td style="color:${color};font-family:DM Mono">${sign} ${fmt(absAmt)}</td><td>${t.description}</td></tr>`}).join('');
       const newCats=Object.values(newCatMap);
       document.getElementById('import-new-cats').innerHTML=newCats.length?newCats.map(c=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:var(--bg3);border:1px solid var(--border);font-size:12px"><span style="width:7px;height:7px;border-radius:50%;background:${c.color}"></span>${c.icon} ${c.name}</span>`).join(''):'<span style="font-size:12px;color:var(--text3)">Todas já existem</span>';
       const warn=document.getElementById('import-warn');
