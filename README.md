@@ -1,3 +1,5 @@
+[index.html.html](https://github.com/user-attachments/files/28367623/index.html.html)
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -212,6 +214,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="nav-item" onclick="showSection('categorias')"><span class="nav-icon">🏷️</span><span>Categorias</span></div>
     <div class="nav-item" onclick="showSection('anual')"><span class="nav-icon">📅</span><span>Visão Anual</span></div>
     <div class="nav-item" onclick="showSection('importar')"><span class="nav-icon">📥</span><span>Importar Excel</span></div>
+    <div class="nav-item" onclick="showSection('exportar')"><span class="nav-icon">📤</span><span>Exportar Excel</span></div>
     <div class="nav-item" onclick="showSection('gcat')"><span class="nav-icon">⚙️</span><span>Categorias</span></div>
     <div class="nav-item" onclick="showSection('cloud')"><span class="nav-icon">☁️</span><span>Nuvem</span></div>
   </nav>
@@ -418,6 +421,56 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
 </section>
 
+<!-- ===== EXPORTAR EXCEL ===== -->
+<section id="sec-exportar" class="section">
+  <div class="page-header">
+    <div><div class="page-title">Exportar Excel</div><div class="page-sub">Baixe seus dados em formato .xlsx</div></div>
+  </div>
+  <div class="chart-card" style="margin-bottom:18px">
+    <div style="font-size:14px;font-weight:500;margin-bottom:16px">Filtros de exportação</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">
+      <div>
+        <div class="form-label">Mês</div>
+        <select class="form-select" id="exp-month">
+          <option value="-1">Todos os meses</option>
+        </select>
+      </div>
+      <div>
+        <div class="form-label">Ano</div>
+        <select class="form-select" id="exp-year"></select>
+      </div>
+      <div>
+        <div class="form-label">Tipo</div>
+        <select class="form-select" id="exp-type">
+          <option value="all">Todos</option>
+          <option value="expense">Apenas Despesas</option>
+          <option value="income">Apenas Receitas</option>
+        </select>
+      </div>
+      <div>
+        <div class="form-label">Categoria</div>
+        <select class="form-select" id="exp-cat">
+          <option value="all">Todas</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="exportExcel()" style="font-size:13px;padding:9px 20px">📥 Baixar Excel</button>
+      <span id="exp-preview-count" style="font-size:12px;color:var(--text2)">—</span>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div style="font-size:14px;font-weight:500;margin-bottom:14px">Prévia dos dados</div>
+    <div class="import-table-wrap" style="max-height:380px">
+      <table class="import-table">
+        <thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Valor</th><th>Descrição</th></tr></thead>
+        <tbody id="exp-preview-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
 <!-- ===== GERENCIAR CATEGORIAS ===== -->
 <section id="sec-gcat" class="section">
   <div class="page-header"><div><div class="page-title">Gerenciar Categorias</div><div class="page-sub">Crie e edite categorias personalizadas</div></div></div>
@@ -555,7 +608,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
     <div class="form-row" style="margin-top:13px">
       <label class="form-label">Categoria</label>
-      <select class="form-select" id="f-cat"></select>
+      <input class="form-input" id="f-cat-search" placeholder="Buscar categoria..." oninput="filterCatOptions()" onclick="showCatDropdown()" autocomplete="off" style="margin-bottom:4px">
+      <div id="f-cat-dropdown" style="display:none;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);max-height:200px;overflow-y:auto;position:relative;z-index:10"></div>
+      <input type="hidden" id="f-cat">
     </div>
     <input type="hidden" id="f-editing-id">
     <div class="modal-actions">
@@ -644,7 +699,7 @@ let chartMonthly=null,chartPie=null,chartCatPie=null,chartAnual=null,chartCatAnu
 function destroyChart(c){if(c){try{c.destroy()}catch{}}return null}
 
 // ===================== SECTIONS =====================
-const SEC_IDX={dashboard:0,transacoes:1,categorias:2,anual:3,importar:4,gcat:5,cloud:6};
+const SEC_IDX={dashboard:0,transacoes:1,categorias:2,anual:3,importar:4,exportar:5,gcat:6,cloud:7};
 function showSection(name){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -661,6 +716,7 @@ function showSection(name){
   if(name==='categorias') renderCategorias();
   if(name==='anual') renderAnual();
   if(name==='importar') renderImportHistory();
+  if(name==='exportar') renderExportSection();
   if(name==='gcat') renderCatManager();
   if(name==='cloud') renderCloudSection();
 }
@@ -683,8 +739,10 @@ function openModal(id){
     document.getElementById('f-desc').value = t.description;
     document.getElementById('f-amount').value = t.amount;
     document.getElementById('f-date').value = t.date;
-    // set category after setType populates the select
-    document.getElementById('f-cat').value = t.category;
+    // set category after setType populates dropdown
+    const c=getCat(t.category);
+    document.getElementById('f-cat').value=t.category;
+    document.getElementById('f-cat-search').value=c.icon+' '+c.name;
   } else {
     document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
     document.getElementById('f-desc').value='';
@@ -697,10 +755,71 @@ function closeModalBg(e){if(e.target.id==='modal-bg')closeModal()}
 
 function setType(type){
   currentType=type;
-  const cats=loadCats()[type];
-  document.getElementById('f-cat').innerHTML=cats.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
   document.getElementById('rb-income').className='radio-btn'+(type==='income'?' sel-income':'');
   document.getElementById('rb-expense').className='radio-btn'+(type==='expense'?' sel-expense':'');
+  document.getElementById('f-cat').value='';
+  document.getElementById('f-cat-search').value='';
+  renderCatDropdown('');
+}
+
+function getAllCatsForType(type){
+  // mostra todas: primeiro as do tipo, depois as do outro tipo (marcadas)
+  const cats=loadCats();
+  return[
+    ...cats[type].map(c=>({...c,_primary:true})),
+    ...cats[type==='expense'?'income':'expense'].map(c=>({...c,_primary:false}))
+  ];
+}
+
+function renderCatDropdown(filter){
+  const dd=document.getElementById('f-cat-dropdown'); if(!dd)return;
+  const all=getAllCatsForType(currentType);
+  const q=filter.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const filtered=all.filter(c=>c.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q));
+  if(!filtered.length){dd.innerHTML='<div style="padding:10px 14px;font-size:12px;color:var(--text3)">Nenhuma categoria encontrada</div>';return}
+  // agrupa: primárias primeiro, depois separador e secundárias
+  const primary=filtered.filter(c=>c._primary), secondary=filtered.filter(c=>!c._primary);
+  let html='';
+  if(primary.length) html+=primary.map(c=>catOption(c)).join('');
+  if(secondary.length){
+    if(primary.length) html+=`<div style="padding:4px 14px;font-size:10px;color:var(--text3);background:var(--bg4);border-top:1px solid var(--border)">Outras categorias</div>`;
+    html+=secondary.map(c=>catOption(c)).join('');
+  }
+  dd.innerHTML=html;
+}
+
+function catOption(c){
+  const selected=document.getElementById('f-cat')?.value===c.id;
+  return`<div onclick="selectCat('${c.id}','${c.name.replace(/'/g,"\\'")}','${c.icon}')" style="display:flex;align-items:center;gap:9px;padding:9px 14px;cursor:pointer;transition:background .1s;font-size:13px;${selected?'background:var(--bg4)':''}" onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='${selected?'var(--bg4)':'transparent'}'">
+    <span style="width:8px;height:8px;border-radius:50%;background:${c.color};flex-shrink:0"></span>
+    <span>${c.icon}</span>
+    <span>${c.name}</span>
+    ${selected?'<span style="margin-left:auto;color:var(--green);font-size:11px">✓</span>':''}
+  </div>`;
+}
+
+function selectCat(id,name,icon){
+  document.getElementById('f-cat').value=id;
+  document.getElementById('f-cat-search').value=icon+' '+name;
+  document.getElementById('f-cat-dropdown').style.display='none';
+}
+
+function showCatDropdown(){
+  const dd=document.getElementById('f-cat-dropdown');
+  dd.style.display='block';
+  renderCatDropdown(document.getElementById('f-cat-search').value);
+  // fecha ao clicar fora
+  setTimeout(()=>document.addEventListener('click',closeCatDropdownOutside,{once:true}),10);
+}
+
+function closeCatDropdownOutside(e){
+  const dd=document.getElementById('f-cat-dropdown'),inp=document.getElementById('f-cat-search');
+  if(!dd?.contains(e.target)&&e.target!==inp) dd.style.display='none';
+}
+
+function filterCatOptions(){
+  document.getElementById('f-cat-dropdown').style.display='block';
+  renderCatDropdown(document.getElementById('f-cat-search').value);
 }
 
 async function saveTransaction(){
@@ -709,6 +828,7 @@ async function saveTransaction(){
   const date=document.getElementById('f-date').value;
   const cat=document.getElementById('f-cat').value;
   if(!desc||!amount||!date||amount<=0){alert('Preencha todos os campos.');return}
+  if(!cat){alert('Selecione uma categoria.');return}
   const db=loadDB();
   const id=document.getElementById('f-editing-id').value;
   if(id){
@@ -942,14 +1062,18 @@ function handleFile(file){
         if(!row){skipped.push(idx);return}
         const rawDate=row[cDia],rawTipo=String(row[cTipo]||'').trim(),rawDept=String(row[cDept]||'').trim(),rawValor=row[cValor],rawDesc=String(row[cDesc]||'').trim();
         if(!rawDate||rawValor==null||isNaN(Number(rawValor))){skipped.push(idx);return}
-        const amount=Math.abs(Number(rawValor)); if(amount===0){skipped.push(idx);return}
+        const rawNum=Number(rawValor);
+        const amount=Math.abs(rawNum); if(amount===0){skipped.push(idx);return}
         let dateStr='';
         if(rawDate instanceof Date&&!isNaN(rawDate)){const y=rawDate.getFullYear(),m=String(rawDate.getMonth()+1).padStart(2,'0'),d=String(rawDate.getDate()).padStart(2,'0');dateStr=`${y}-${m}-${d}`}
         else if(typeof rawDate==='number'){const d=new Date(Math.round((rawDate-25569)*86400*1000));if(!isNaN(d))dateStr=d.toISOString().split('T')[0]}
         else{const d=new Date(String(rawDate));if(!isNaN(d))dateStr=d.toISOString().split('T')[0]}
         if(!dateStr){skipped.push(idx);return}
         const tipoN=norm(rawTipo); let type='expense';
-        if(/recebid|entrada|receita|income/.test(tipoN))type='income';
+        if(/recebid|entrada|receita|income/.test(tipoN)) type='income';
+        // valor negativo no excel → sempre despesa; valor positivo sem tipo → receita
+        if(rawNum<0) type='expense';
+        else if(!rawTipo.trim() && rawNum>0) type='income';
         const deptN=norm(rawDept); let catId=null;
         for(const c of allExisting){const cn=norm(c.name);if(deptN===cn){catId=c.id;break}if(deptN.length>=4&&cn.length>=4&&(deptN.startsWith(cn.slice(0,5))||cn.startsWith(deptN.slice(0,5)))){catId=c.id;break}}
         if(!catId){catId='imp_'+slugify(rawDept);if(!newCatMap[catId])newCatMap[catId]={id:catId,name:rawDept.trim(),type,icon:'🏷️',color:randomColor()}}
@@ -1034,6 +1158,106 @@ async function deleteCat(type,id){
   await saveCats(cats); renderCatManager();
 }
 
+// ===================== EXPORT =====================
+function renderExportSection(){
+  populateMonthSelect('exp-month', new Date().getMonth());
+  populateYearSelect('exp-year', new Date().getFullYear());
+  // popula categorias
+  const sel=document.getElementById('exp-cat');
+  const cats=allCats();
+  sel.innerHTML='<option value="all">Todas</option>'+cats.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+  updateExportPreview();
+  // listeners
+  ['exp-month','exp-year','exp-type','exp-cat'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.onchange=updateExportPreview;
+  });
+}
+
+function getExportTxs(){
+  const month=parseInt(document.getElementById('exp-month')?.value??-1);
+  const year=parseInt(document.getElementById('exp-year')?.value??new Date().getFullYear());
+  const type=document.getElementById('exp-type')?.value||'all';
+  const catId=document.getElementById('exp-cat')?.value||'all';
+  const db=loadDB();
+  let txs=month===-1?db.transactions.filter(t=>new Date(t.date+'T12:00').getFullYear()===year):filterTx(db.transactions,month,year);
+  if(type!=='all') txs=txs.filter(t=>t.type===type);
+  if(catId!=='all') txs=txs.filter(t=>t.category===catId);
+  return txs;
+}
+
+function updateExportPreview(){
+  const txs=getExportTxs();
+  const count=document.getElementById('exp-preview-count');
+  if(count) count.textContent=`${txs.length} transação(ões) selecionada(s)`;
+  const tbody=document.getElementById('exp-preview-tbody');
+  if(!tbody)return;
+  if(!txs.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">Nenhuma transação no período</td></tr>';return}
+  tbody.innerHTML=txs.slice(0,50).map(t=>{
+    const c=getCat(t.category),d=new Date(t.date+'T12:00');
+    const color=t.type==='income'?'var(--green)':'var(--red)', sign=t.type==='income'?'+':'-';
+    return`<tr><td>${d.toLocaleDateString('pt-BR')}</td><td style="color:${color}">${t.type==='income'?'Receita':'Despesa'}</td><td>${c.icon} ${c.name}</td><td style="color:${color};font-family:DM Mono">${sign} ${fmt(t.amount)}</td><td>${t.description}</td></tr>`;
+  }).join('')+(txs.length>50?`<tr><td colspan="5" style="text-align:center;padding:8px;color:var(--text3);font-size:12px">... e mais ${txs.length-50} transações (todas serão exportadas)</td></tr>`:'');
+}
+
+function exportExcel(){
+  const txs=getExportTxs();
+  if(!txs.length){alert('Nenhuma transação para exportar com os filtros selecionados.');return}
+
+  // Monta dados
+  const rows=[['Data','Tipo','Departamento','Valor','Descrição','Mês','Ano']];
+  txs.forEach(t=>{
+    const d=new Date(t.date+'T12:00');
+    const c=getCat(t.category);
+    const valorFinal=t.type==='expense'?-t.amount:t.amount; // negativo para gastos
+    rows.push([
+      t.date,                           // data ISO para o Excel interpretar corretamente
+      t.type==='income'?'Recebido':'Gasto',
+      c.name,
+      valorFinal,
+      t.description,
+      d.getMonth()+1,
+      d.getFullYear()
+    ]);
+  });
+
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+
+  // largura das colunas
+  ws['!cols']=[{wch:12},{wch:10},{wch:20},{wch:12},{wch:30},{wch:6},{wch:6}];
+
+  // formata coluna A como data e D como moeda
+  const range=XLSX.utils.decode_range(ws['!ref']);
+  for(let r=1;r<=range.e.r;r++){
+    const dateCell=ws[XLSX.utils.encode_cell({r,c:0})];
+    if(dateCell) dateCell.z='DD/MM/YYYY';
+    const valCell=ws[XLSX.utils.encode_cell({r,c:3})];
+    if(valCell){valCell.t='n';valCell.z='#,##0.00'}
+  }
+
+  XLSX.utils.book_append_sheet(wb,ws,'Gastos');
+
+  // Aba de resumo mensal
+  const year=parseInt(document.getElementById('exp-year')?.value??new Date().getFullYear());
+  const summaryRows=[['Mês','Receitas','Despesas','Saldo']];
+  MONTHS.forEach((name,m)=>{
+    const mt=filterTx(txs,m,year);
+    const inc=mt.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+    const exp=mt.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+    if(inc||exp) summaryRows.push([name,inc,-exp,inc-exp]);
+  });
+  if(summaryRows.length>1){
+    const ws2=XLSX.utils.aoa_to_sheet(summaryRows);
+    ws2['!cols']=[{wch:14},{wch:14},{wch:14},{wch:14}];
+    XLSX.utils.book_append_sheet(wb,ws2,'Resumo Mensal');
+  }
+
+  const month=parseInt(document.getElementById('exp-month')?.value??-1);
+  const mLabel=month===-1?'Anual':MONTHS_SHORT[month];
+  XLSX.writeFile(wb,`FinTrack_${year}_${mLabel}.xlsx`);
+}
+
 // ===================== NUVEM / FIREBASE =====================
 function renderCloudSection(){
   const url=_fbUrl;
@@ -1115,6 +1339,7 @@ function populateAllSelects(){
   populateMonthSelect('tx-month',cm);   populateYearSelect('tx-year',cy);
   populateMonthSelect('cat-month',cm);  populateYearSelect('cat-year',cy);
   populateYearSelect('anual-year',cy);
+  populateYearSelect('exp-year',cy);
 }
 
 // ===================== SEED =====================
@@ -1140,10 +1365,8 @@ async function seedDemo(){
 // ===================== INIT =====================
 (async function init(){
   await loadAll();
-  if(!_db.transactions.length) await seedDemo();
   populateAllSelects();
   updateDashboard();
-  // Atualiza badge de sync
   if(_fbUrl){const b=document.getElementById('sync-status-badge');b.className='sync-status sync-ok';b.innerHTML='<span class="sync-dot ok"></span>Firebase conectado'}
 })();
 </script>
