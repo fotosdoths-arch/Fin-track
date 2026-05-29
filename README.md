@@ -1,4 +1,4 @@
-[index.html](https://github.com/user-attachments/files/28371770/index.html)
+[index.html](https://github.com/user-attachments/files/28372742/index.html)
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -208,15 +208,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="logo-icon">💰</div>
     <span>FinTrack</span>
   </div>
-  <nav>
-    <div class="nav-item active" onclick="showSection('dashboard')"><span class="nav-icon">📊</span><span>Dashboard</span></div>
-    <div class="nav-item" onclick="showSection('transacoes')"><span class="nav-icon">↕️</span><span>Transações</span></div>
-    <div class="nav-item" onclick="showSection('categorias')"><span class="nav-icon">🏷️</span><span>Categorias</span></div>
-    <div class="nav-item" onclick="showSection('anual')"><span class="nav-icon">📅</span><span>Visão Anual</span></div>
-    <div class="nav-item" onclick="showSection('importar')"><span class="nav-icon">📥</span><span>Importar Excel</span></div>
-    <div class="nav-item" onclick="showSection('exportar')"><span class="nav-icon">📤</span><span>Exportar Excel</span></div>
-    <div class="nav-item" onclick="showSection('gcat')"><span class="nav-icon">⚙️</span><span>Categorias</span></div>
-    <div class="nav-item" onclick="showSection('cloud')"><span class="nav-icon">☁️</span><span>Nuvem</span></div>
+  <nav style="display:flex;flex-direction:column;flex:1;overflow-y:auto">
+    <div class="nav-item active" data-section="dashboard" onclick="showSection('dashboard')"><span class="nav-icon">📊</span><span>Dashboard</span></div>
+    <div class="nav-item" data-section="transacoes" onclick="showSection('transacoes')"><span class="nav-icon">↕️</span><span>Transações</span></div>
+    <div class="nav-item" data-section="categorias" onclick="showSection('categorias')"><span class="nav-icon">🏷️</span><span>Categorias</span></div>
+    <div class="nav-item" data-section="anual" onclick="showSection('anual')"><span class="nav-icon">📅</span><span>Visão Anual</span></div>
+    <div class="nav-item" data-section="importar" onclick="showSection('importar')"><span class="nav-icon">📥</span><span>Importar Excel</span></div>
+    <div class="nav-item" data-section="exportar" onclick="showSection('exportar')"><span class="nav-icon">📤</span><span>Exportar Excel</span></div>
+    <div class="nav-item" data-section="gcat" onclick="showSection('gcat')"><span class="nav-icon">⚙️</span><span>Categorias</span></div>
+    <div class="nav-item" data-section="cloud" onclick="showSection('cloud')"><span class="nav-icon">☁️</span><span>Nuvem</span></div>
+    <div style="flex:1"></div>
+    <div class="nav-item" data-section="reset" onclick="showSection('reset')" style="color:var(--red);border-top:1px solid var(--border)"><span class="nav-icon">🗑️</span><span>Zerar dados</span></div>
   </nav>
 </aside>
 
@@ -567,6 +569,73 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
 </section>
 
+<!-- ===== ZERAR DADOS ===== -->
+<section id="sec-reset" class="section">
+  <div class="page-header">
+    <div><div class="page-title">Zerar Dados</div><div class="page-sub">Apague transações, categorias ou tudo</div></div>
+  </div>
+
+  <div style="display:grid;gap:16px;max-width:600px">
+
+    <!-- Zerar transações -->
+    <div class="chart-card" style="border-color:rgba(245,101,101,0.2)">
+      <div style="display:flex;align-items:flex-start;gap:14px">
+        <div style="font-size:32px">📋</div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:600;margin-bottom:4px">Apagar todas as transações</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5">Remove todos os lançamentos de receitas e despesas. As categorias são mantidas.</div>
+          <div style="background:var(--bg3);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:14px" id="reset-tx-count">Carregando...</div>
+          <button class="btn btn-danger" onclick="resetTransactions()" style="font-size:13px">🗑 Apagar transações</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zerar categorias customizadas -->
+    <div class="chart-card" style="border-color:rgba(251,191,36,0.2)">
+      <div style="display:flex;align-items:flex-start;gap:14px">
+        <div style="font-size:32px">🏷️</div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:600;margin-bottom:4px">Remover categorias personalizadas</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5">Remove apenas as categorias que você criou ou que foram importadas. As categorias padrão são mantidas.</div>
+          <div style="background:var(--bg3);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:14px" id="reset-cats-count">Carregando...</div>
+          <button class="btn" onclick="resetCustomCats()" style="font-size:13px;background:rgba(251,191,36,0.1);border-color:rgba(251,191,36,0.3);color:var(--amber)">🏷 Remover categorias criadas</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zerar histórico de importações -->
+    <div class="chart-card">
+      <div style="display:flex;align-items:flex-start;gap:14px">
+        <div style="font-size:32px">📥</div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:600;margin-bottom:4px">Limpar histórico de importações</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5">Apaga o registro de arquivos Excel importados. Não remove as transações.</div>
+          <div style="background:var(--bg3);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:14px" id="reset-imp-count">Carregando...</div>
+          <button class="btn" onclick="resetImportHistory()" style="font-size:13px">🧹 Limpar histórico</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zerar tudo -->
+    <div class="chart-card" style="border:2px solid rgba(245,101,101,0.4);background:rgba(245,101,101,0.04)">
+      <div style="display:flex;align-items:flex-start;gap:14px">
+        <div style="font-size:32px">⚠️</div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:600;margin-bottom:4px;color:var(--red)">Apagar tudo</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5">Remove <strong style="color:var(--text)">todas</strong> as transações, categorias personalizadas e histórico de importações. As categorias padrão são restauradas. <strong style="color:var(--red)">Ação irreversível.</strong></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer">
+              <input type="checkbox" id="confirm-reset-all" style="accent-color:var(--red)"> Entendo que esta ação não pode ser desfeita
+            </label>
+          </div>
+          <button class="btn btn-danger" onclick="resetAll()" style="font-size:13px">⚠️ Apagar tudo</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
 </main>
 </div>
 
@@ -699,18 +768,25 @@ let chartMonthly=null,chartPie=null,chartCatPie=null,chartAnual=null,chartCatAnu
 function destroyChart(c){if(c){try{c.destroy()}catch{}}return null}
 
 // ===================== SECTIONS =====================
-const SEC_IDX={dashboard:0,transacoes:1,categorias:2,anual:3,importar:4,exportar:5,gcat:6,cloud:7};
+const SEC_IDX={dashboard:0,transacoes:1,categorias:2,anual:3,importar:4,exportar:5,gcat:6,cloud:7,reset:8};
 function showSection(name){
+  // hide all sections
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  // deactivate all nav items
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('sec-'+name).classList.add('active');
-  document.querySelectorAll('.nav-item')[SEC_IDX[name]]?.classList.add('active');
+  // show target section
+  const sec=document.getElementById('sec-'+name);
+  if(sec) sec.classList.add('active');
+  // activate correct nav item by data-section attribute (robust, no index)
+  const navItem=document.querySelector(`.nav-item[data-section="${name}"]`);
+  if(navItem) navItem.classList.add('active');
   // mobile bar
   document.querySelectorAll('.mob-btn').forEach(b=>b.classList.remove('active'));
   const mobMap={dashboard:'mob-dashboard',transacoes:'mob-transacoes',anual:'mob-anual'};
   if(mobMap[name]) document.getElementById(mobMap[name])?.classList.add('active');
-  // close sidebar on mobile
+  // close mobile sidebar
   document.getElementById('sidebar').classList.remove('open');
+  // render section content
   if(name==='dashboard') updateDashboard();
   if(name==='transacoes') renderTxList();
   if(name==='categorias') renderCategorias();
@@ -719,6 +795,7 @@ function showSection(name){
   if(name==='exportar') renderExportSection();
   if(name==='gcat') renderCatManager();
   if(name==='cloud') renderCloudSection();
+  if(name==='reset') renderResetSection();
 }
 function toggleMobileMenu(){document.getElementById('sidebar').classList.toggle('open')}
 
@@ -1343,6 +1420,80 @@ function populateAllSelects(){
   populateMonthSelect('cat-month',cm);  populateYearSelect('cat-year',cy);
   populateYearSelect('anual-year',cy);
   populateYearSelect('exp-year',cy);
+}
+
+// ===================== RESET =====================
+function renderResetSection(){
+  const db=loadDB(), cats=loadCats(), imps=loadImports();
+  const customExp=cats.expense.filter(c=>!c.builtin).length;
+  const customInc=cats.income.filter(c=>!c.builtin).length;
+  const txCount=db.transactions.length;
+  const incCount=db.transactions.filter(t=>t.type==='income').length;
+  const expCount=db.transactions.filter(t=>t.type==='expense').length;
+
+  const txEl=document.getElementById('reset-tx-count');
+  if(txEl) txEl.innerHTML=txCount
+    ? `<strong style="color:var(--text)">${txCount}</strong> transações no total — <span style="color:var(--green)">${incCount} receitas</span> · <span style="color:var(--red)">${expCount} despesas</span>`
+    : 'Nenhuma transação registrada.';
+
+  const catEl=document.getElementById('reset-cats-count');
+  if(catEl) catEl.innerHTML=(customExp+customInc)
+    ? `<strong style="color:var(--text)">${customExp+customInc}</strong> categorias personalizadas — ${customExp} de despesa · ${customInc} de receita`
+    : 'Nenhuma categoria personalizada criada.';
+
+  const impEl=document.getElementById('reset-imp-count');
+  if(impEl) impEl.innerHTML=imps.length
+    ? `<strong style="color:var(--text)">${imps.length}</strong> importação(ões) registrada(s)`
+    : 'Histórico de importações vazio.';
+
+  // reset checkbox
+  const cb=document.getElementById('confirm-reset-all');
+  if(cb) cb.checked=false;
+}
+
+async function resetTransactions(){
+  const db=loadDB();
+  if(!db.transactions.length){alert('Não há transações para apagar.');return}
+  if(!confirm(`Apagar todas as ${db.transactions.length} transações? Esta ação não pode ser desfeita.`))return;
+  await saveDB({transactions:[]});
+  populateAllSelects();
+  renderResetSection();
+  refreshAll();
+  alert('✓ Todas as transações foram apagadas.');
+}
+
+async function resetCustomCats(){
+  const cats=loadCats();
+  const total=(cats.expense.filter(c=>!c.builtin).length)+(cats.income.filter(c=>!c.builtin).length);
+  if(!total){alert('Não há categorias personalizadas para remover.');return}
+  if(!confirm(`Remover ${total} categoria(s) personalizada(s)?`))return;
+  cats.expense=cats.expense.filter(c=>c.builtin);
+  cats.income=cats.income.filter(c=>c.builtin);
+  await saveCats(cats);
+  renderResetSection();
+  renderCatManager();
+  alert('✓ Categorias personalizadas removidas.');
+}
+
+async function resetImportHistory(){
+  if(!loadImports().length){alert('Histórico já está vazio.');return}
+  if(!confirm('Limpar o histórico de importações?'))return;
+  await saveImports([]);
+  renderResetSection();
+  alert('✓ Histórico limpo.');
+}
+
+async function resetAll(){
+  const cb=document.getElementById('confirm-reset-all');
+  if(!cb?.checked){alert('Marque a caixa de confirmação antes de continuar.');return}
+  if(!confirm('Tem certeza absoluta? TODOS os dados serão apagados e esta ação não pode ser desfeita.'))return;
+  await saveDB({transactions:[]});
+  await saveCats(JSON.parse(JSON.stringify(DEFAULT_CATS)));
+  await saveImports([]);
+  populateAllSelects();
+  renderResetSection();
+  refreshAll();
+  alert('✓ Todos os dados foram apagados. O app está em branco.');
 }
 
 // ===================== SEED =====================
