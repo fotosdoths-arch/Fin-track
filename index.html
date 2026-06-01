@@ -114,6 +114,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .cat-color-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
 .cat-item-name{flex:1;font-size:13px}
 .cat-item-badge{font-size:10px;padding:2px 7px;border-radius:10px;background:var(--bg3);color:var(--text3)}
+.cat-item-edit-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;opacity:.5;padding:2px 6px}
+.cat-item-edit-btn:hover{color:var(--blue);opacity:1}
+.cat-edit-inline{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:10px 12px;margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cat-total-badge{font-size:11px;font-family:'DM Mono',monospace;padding:2px 8px;border-radius:20px;background:var(--bg3);color:var(--text2)}
 .cat-item-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;opacity:.5;padding:2px 6px}
 .cat-item-del:hover{color:var(--red);opacity:1}
 .new-cat-form{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
@@ -165,6 +169,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .rank-bar-wrap{flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
 .rank-bar{height:100%;border-radius:2px}
 .mobile-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);z-index:100;padding:6px 0 calc(6px + env(safe-area-inset-bottom))}
+/* Lock screen */
+.lock-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center}
+.lock-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:40px 36px;width:360px;max-width:95vw;text-align:center}
+.lock-logo{width:56px;height:56px;background:linear-gradient(135deg,var(--green),#0ea5e9);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 20px}
+.lock-title{font-size:20px;font-weight:600;margin-bottom:6px}
+.lock-sub{font-size:13px;color:var(--text2);margin-bottom:28px}
+.lock-input{width:100%;padding:12px 16px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;text-align:center;letter-spacing:4px;transition:border .2s}
+.lock-input:focus{border-color:var(--green)}
+.lock-input.err{border-color:var(--red);animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.lock-btn{width:100%;margin-top:14px;padding:11px;border-radius:var(--radius-sm);background:var(--green);color:#0f1117;font-size:14px;font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s}
+.lock-btn:hover{background:#1ab88c}
+.lock-err{color:var(--red);font-size:12px;margin-top:10px;min-height:18px}
 .mobile-bar-inner{display:flex;justify-content:space-around}
 .mob-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 12px;cursor:pointer;color:var(--text3);font-size:10px;border-radius:8px;transition:color .15s;border:none;background:none}
 .mob-btn.active{color:var(--green)}
@@ -187,67 +204,23 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   .sidebar .nav-item span,.sidebar .logo span{display:none}
   .cards-grid{grid-template-columns:repeat(2,1fr)}
 }
-
-.login-screen{
-  position:fixed;inset:0;background:linear-gradient(135deg,#0f1117,#171b26);
-  display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px
-}
-.login-card{
-  width:100%;max-width:420px;background:var(--bg2);border:1px solid var(--border2);
-  border-radius:20px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.45)
-}
-.login-logo{
-  width:70px;height:70px;border-radius:18px;
-  background:linear-gradient(135deg,var(--green),#0ea5e9);
-  display:flex;align-items:center;justify-content:center;
-  font-size:32px;margin:0 auto 18px
-}
-.login-title{text-align:center;font-size:24px;font-weight:700;margin-bottom:6px}
-.login-sub{text-align:center;color:var(--text2);font-size:13px;margin-bottom:24px}
-.login-error{
-  display:none;background:var(--red-bg);border:1px solid rgba(245,101,101,.3);
-  color:var(--red);padding:10px 12px;border-radius:10px;
-  font-size:12px;margin-bottom:14px
-}
-.login-actions{display:flex;gap:10px;margin-top:18px}
-.hidden-app{display:none}
-
 </style>
 </head>
 <body>
-
-<div id="login-screen" class="login-screen">
-  <div class="login-card">
-    <div class="login-logo">🔒</div>
-    <div class="login-title">Acesso Restrito</div>
-    <div class="login-sub">Digite o código de acesso para visualizar os dados financeiros.</div>
-
-    <div id="login-error" class="login-error">
-      Código de acesso inválido.
-    </div>
-
-    <div class="form-row">
-      <label class="form-label">Código de acesso</label>
-      <input 
-        class="form-input" 
-        id="access-code" 
-        type="password" 
-        placeholder="Digite o código"
-        onkeypress="if(event.key==='Enter'){checkAccess()}"
-      >
-    </div>
-
-    <div class="login-actions">
-      <button class="btn btn-primary" style="width:100%" onclick="checkAccess()">
-        Entrar
-      </button>
-    </div>
+<!-- Lock screen -->
+<div id="lock-screen" class="lock-screen">
+  <div class="lock-card">
+    <div class="lock-logo">💰</div>
+    <div class="lock-title">FinTrack</div>
+    <div class="lock-sub">Digite a senha para acessar</div>
+    <input class="lock-input" id="lock-input" type="password" placeholder="••••••••" maxlength="20"
+      onkeydown="if(event.key==='Enter')checkPassword()">
+    <button class="lock-btn" onclick="checkPassword()">Entrar</button>
+    <div class="lock-err" id="lock-err"></div>
   </div>
 </div>
 
-<div id="app-content" class="hidden-app">
-
-<div class="app">
+<div class="app" id="app-root" style="display:none">
 
 <aside class="sidebar" id="sidebar">
   <div class="logo"><div class="logo-icon">💰</div><span>FinTrack</span></div>
@@ -413,7 +386,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="page-header">
     <div><div class="page-title">Categorias</div><div class="page-sub">Análise por categoria</div></div>
     <div class="hdr-actions">
-      <select class="period-select" id="cat-month" onchange="renderCategorias()"></select>
+      <select class="period-select" id="cat-month" onchange="renderCategorias()">
+        <option value="-1">Todos os meses</option>
+      </select>
       <select class="period-select" id="cat-year" onchange="renderCategorias()"></select>
     </div>
   </div>
@@ -623,7 +598,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 </section>
 
 </main>
-</div>
+</div><!-- end app-root -->
 
 <!-- Mobile bar -->
 <div class="mobile-bar">
@@ -658,40 +633,45 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div id="f-cat-dropdown" style="display:none;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);max-height:200px;overflow-y:auto;position:relative;z-index:10"></div>
       <input type="hidden" id="f-cat">
     </div>
+    <!-- Parcelamento -->
+    <div class="form-row" style="margin-top:4px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2)">
+        <input type="checkbox" id="f-parceled" onchange="toggleParcelamento()" style="accent-color:var(--green)">
+        Pagamento parcelado
+      </label>
+    </div>
+    <div id="f-parcelas-row" style="display:none" class="form-row-2">
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">Nº de parcelas</label>
+        <input class="form-input" id="f-parcelas" type="number" min="2" max="120" value="2" placeholder="Ex: 12">
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">Valor de cada parcela</label>
+        <input class="form-input" id="f-parcela-valor" type="number" min="0.01" step="0.01" placeholder="Calculado automaticamente" readonly style="opacity:.7">
+      </div>
+    </div>
     <input type="hidden" id="f-editing-id">
     <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="saveTransaction()">Salvar</button></div>
   </div>
 </div>
 
 <script>
-
-const ACCESS_CODE='contabilidadeths@123';
-
-function checkAccess(){
-  const input=document.getElementById('access-code');
-  const error=document.getElementById('login-error');
-
-  if(input.value===ACCESS_CODE){
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app-content').classList.remove('hidden-app');
-    sessionStorage.setItem('fintrack_access','granted');
-  }else{
-    error.style.display='block';
-    input.value='';
-    input.focus();
+// ===================== LOCK SCREEN =====================
+const PASS_HASH='contths123'; // stored as plaintext — obfuscated via check only
+function checkPassword(){
+  const val=document.getElementById('lock-input').value;
+  const inp=document.getElementById('lock-input');
+  if(val===PASS_HASH){
+    document.getElementById('lock-screen').style.display='none';
+    document.getElementById('app-root').style.display='flex';
+    document.getElementById('lock-input').value='';
+  } else {
+    inp.classList.add('err');
+    document.getElementById('lock-err').textContent='Senha incorreta. Tente novamente.';
+    setTimeout(()=>{inp.classList.remove('err');document.getElementById('lock-err').textContent=''},1800);
+    inp.value='';inp.focus();
   }
 }
-
-function verifySession(){
-  const granted=sessionStorage.getItem('fintrack_access');
-  if(granted==='granted'){
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app-content').classList.remove('hidden-app');
-  }
-}
-
-document.addEventListener('DOMContentLoaded',verifySession);
-
 
 // ===================== STORAGE =====================
 const DB_KEY='fintrack_v2',CATS_KEY='fintrack_cats_v2',IMP_KEY='fintrack_imports',FB_KEY='fintrack_firebase_url';
@@ -814,6 +794,14 @@ function openModal(id){
   document.getElementById('modal-bg').classList.add('open');
   document.getElementById('modal-title').textContent=id?'Editar transação':'Nova transação';
   document.getElementById('f-editing-id').value=id||'';
+  // reset parcelamento
+  document.getElementById('f-parceled').checked=false;
+  document.getElementById('f-parcelas-row').style.display='none';
+  document.getElementById('f-parcelas').value=2;
+  document.getElementById('f-parcela-valor').value='';
+  // hide parcelamento when editing
+  document.getElementById('f-parceled').closest('.form-row').style.display=id?'none':'block';
+  document.getElementById('f-parcelas-row').style.display='none';
   if(id){
     const t=loadDB().transactions.find(x=>x.id===id);if(!t)return;
     setType(t.type);
@@ -829,6 +817,9 @@ function openModal(id){
     document.getElementById('f-amount').value='';
     setType('expense');
   }
+  // auto-calc parcela when amount changes
+  document.getElementById('f-amount').oninput=()=>{if(document.getElementById('f-parceled').checked)calcParcelaValor()};
+  document.getElementById('f-parcelas').oninput=calcParcelaValor;
 }
 function closeModal(){document.getElementById('modal-bg').classList.remove('open')}
 function closeModalBg(e){if(e.target.id==='modal-bg')closeModal()}
@@ -861,6 +852,17 @@ function selectCat(id,name,icon){document.getElementById('f-cat').value=id;docum
 function showCatDropdown(){document.getElementById('f-cat-dropdown').style.display='block';renderCatDropdown(document.getElementById('f-cat-search').value);setTimeout(()=>document.addEventListener('click',function h(e){if(!document.getElementById('f-cat-dropdown')?.contains(e.target)&&e.target!==document.getElementById('f-cat-search')){document.getElementById('f-cat-dropdown').style.display='none';document.removeEventListener('click',h)}},{once:true}),10)}
 function filterCatOptions(){document.getElementById('f-cat-dropdown').style.display='block';renderCatDropdown(document.getElementById('f-cat-search').value)}
 
+function toggleParcelamento(){
+  const checked=document.getElementById('f-parceled').checked;
+  document.getElementById('f-parcelas-row').style.display=checked?'grid':'none';
+  if(checked) calcParcelaValor();
+}
+function calcParcelaValor(){
+  const total=parseFloat(document.getElementById('f-amount').value)||0;
+  const n=parseInt(document.getElementById('f-parcelas').value)||2;
+  document.getElementById('f-parcela-valor').value=n>0?(total/n).toFixed(2):'';
+}
+
 async function saveTransaction(){
   const desc=document.getElementById('f-desc').value.trim();
   const amount=parseFloat(document.getElementById('f-amount').value);
@@ -869,9 +871,38 @@ async function saveTransaction(){
   if(!desc||!amount||!date||amount<=0){alert('Preencha todos os campos.');return}
   if(!cat){alert('Selecione uma categoria.');return}
   const db=loadDB();
-  const id=document.getElementById('f-editing-id').value;
-  if(id){const idx=db.transactions.findIndex(t=>t.id===id);if(idx>=0)db.transactions[idx]={...db.transactions[idx],type:currentType,description:desc,amount,date,category:cat}}
-  else db.transactions.unshift({id:Date.now().toString(),type:currentType,description:desc,amount,date,category:cat});
+  const editingId=document.getElementById('f-editing-id').value;
+  const isParceled=document.getElementById('f-parceled').checked&&!editingId;
+  if(isParceled){
+    const n=parseInt(document.getElementById('f-parcelas').value)||2;
+    if(n<2||n>120){alert('Número de parcelas deve ser entre 2 e 120.');return}
+    const parcelaValor=amount/n;
+    const baseDate=new Date(date+'T12:00');
+    const groupId='parc_'+Date.now().toString(36);
+    for(let i=0;i<n;i++){
+      const d=new Date(baseDate);
+      d.setMonth(d.getMonth()+i);
+      const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      db.transactions.unshift({
+        id:Date.now().toString()+Math.random().toString(36).slice(2),
+        type:currentType,
+        description:`${desc} (${i+1}/${n})`,
+        amount:parseFloat(parcelaValor.toFixed(2)),
+        date:ds,
+        category:cat,
+        parcelaGroup:groupId,
+        parcelaNum:i+1,
+        parcelaTotal:n
+      });
+    }
+  } else {
+    if(editingId){
+      const idx=db.transactions.findIndex(t=>t.id===editingId);
+      if(idx>=0)db.transactions[idx]={...db.transactions[idx],type:currentType,description:desc,amount,date,category:cat};
+    } else {
+      db.transactions.unshift({id:Date.now().toString(),type:currentType,description:desc,amount,date,category:cat});
+    }
+  }
   db.transactions.sort((a,b)=>new Date(b.date)-new Date(a.date));
   await saveDBAndSync(db);
   closeModal();refreshAll();
@@ -1095,7 +1126,12 @@ function renderInsights(){
 function renderCategorias(){
   const month=parseInt(document.getElementById('cat-month')?.value??new Date().getMonth());
   const year=parseInt(document.getElementById('cat-year')?.value??new Date().getFullYear());
-  const db=loadDB(),txs=filterTx(db.transactions,month,year),cats=loadCats();
+  const db=loadDB();
+  // month=-1 → todos os meses do ano selecionado
+  const txs=month===-1
+    ?db.transactions.filter(t=>new Date(t.date+'T12:00').getFullYear()===year)
+    :filterTx(db.transactions,month,year);
+  const cats=loadCats();
   function makeBars(type,cid){
     const total=txs.filter(t=>t.type===type).reduce((s,t)=>s+t.amount,0);
     const data=cats[type].map(c=>({cat:c,total:txs.filter(t=>t.type===type&&t.category===c.id).reduce((s,t)=>s+t.amount,0)})).filter(x=>x.total>0).sort((a,b)=>b.total-a.total);
@@ -1273,10 +1309,58 @@ function exportExcel(){
 // ===================== CAT MANAGER =====================
 function renderCatManager(){
   const cats=loadCats();
+  const db=loadDB();
+  // compute total per category
+  const totals={};
+  db.transactions.forEach(t=>{totals[t.category]=(totals[t.category]||0)+t.amount});
+
   ['expense','income'].forEach(type=>{
     const el=document.getElementById('gcat-'+type+'-list');
-    el.innerHTML=cats[type].map(c=>`<div class="cat-item-row"><div class="cat-color-dot" style="background:${c.color}"></div><div style="font-size:16px">${c.icon}</div><div class="cat-item-name">${c.name}</div>${c.builtin?'<span class="cat-item-badge">padrão</span>':''} ${!c.builtin?`<button class="cat-item-del" onclick="deleteCat('${type}','${c.id}')">✕</button>`:''}</div>`).join('')||'<div style="color:var(--text3);font-size:13px;padding:8px 0">Nenhuma</div>';
+    if(!el)return;
+    el.innerHTML=cats[type].map(c=>{
+      const total=totals[c.id]||0;
+      const inUse=db.transactions.some(t=>t.category===c.id);
+      const totalBadge=total?`<span class="cat-total-badge">${fmt(total)}</span>`:'';
+      const editBtn=`<button class="cat-item-edit-btn" onclick="toggleCatEdit('${type}','${c.id}')" title="Editar">✏️</button>`;
+      const delBtn=!inUse&&!c.builtin?`<button class="cat-item-del" onclick="deleteCat('${type}','${c.id}')">✕</button>`:'';
+      return`<div>
+        <div class="cat-item-row" id="crow-${c.id}">
+          <div class="cat-color-dot" style="background:${c.color}"></div>
+          <div style="font-size:16px">${c.icon}</div>
+          <div class="cat-item-name">${c.name}</div>
+          ${totalBadge}
+          ${c.builtin?'<span class="cat-item-badge">padrão</span>':''}
+          ${editBtn}
+          ${delBtn}
+        </div>
+        <div id="cedit-${c.id}" class="cat-edit-inline" style="display:none">
+          <input id="cename-${c.id}" class="form-input" value="${c.name}" placeholder="Nome" style="flex:1;min-width:80px;height:32px;padding:4px 8px;font-size:12px">
+          <input type="color" id="cecolor-${c.id}" value="${c.color}" class="color-picker" style="width:32px;height:32px">
+          <input id="ceicon-${c.id}" class="form-input" value="${c.icon}" placeholder="🏷️" style="width:40px;text-align:center;height:32px;padding:4px;font-size:14px">
+          <button class="btn btn-primary" onclick="saveCatEdit('${type}','${c.id}')" style="padding:4px 10px;font-size:12px">✓</button>
+          <button class="btn" onclick="toggleCatEdit('${type}','${c.id}')" style="padding:4px 10px;font-size:12px">✕</button>
+        </div>
+      </div>`;
+    }).join('')||'<div style="color:var(--text3);font-size:13px;padding:8px 0">Nenhuma</div>';
   });
+}
+
+function toggleCatEdit(type,id){
+  const el=document.getElementById('cedit-'+id);
+  if(!el)return;
+  el.style.display=el.style.display==='none'?'flex':'none';
+}
+
+async function saveCatEdit(type,id){
+  const name=document.getElementById('cename-'+id)?.value.trim();
+  const color=document.getElementById('cecolor-'+id)?.value;
+  const icon=document.getElementById('ceicon-'+id)?.value.trim()||'📦';
+  if(!name){alert('Nome não pode ser vazio.');return}
+  const cats=loadCats();
+  const idx=cats[type].findIndex(c=>c.id===id);
+  if(idx>=0){cats[type][idx]={...cats[type][idx],name,color,icon};}
+  await saveCats(cats);
+  renderCatManager();
 }
 async function addCat(type){
   const nE=document.getElementById(type==='expense'?'new-exp-name':'new-inc-name');
@@ -1368,7 +1452,13 @@ function populateAllSelects(){
   const now=new Date(),cy=now.getFullYear(),cm=now.getMonth();
   populateMonthSelect('dash-month',cm);populateYearSelect('dash-year',cy);
   populateMonthSelect('tx-month',cm);populateYearSelect('tx-year',cy);
-  populateMonthSelect('cat-month',cm);populateYearSelect('cat-year',cy);
+  // cat-month: always keep "Todos os meses" as first option
+  const catMonthSel=document.getElementById('cat-month');
+  if(catMonthSel){
+    catMonthSel.innerHTML='<option value="-1">Todos os meses</option>'+
+      MONTHS.map((m,i)=>`<option value="${i}"${i===cm?' selected':''}>${m}</option>`).join('');
+  }
+  populateYearSelect('cat-year',cy);
   populateYearSelect('anual-year',cy);populateYearSelect('exp-year',cy);
   populateYearSelect('ev-year',cy);populateYearSelect('ins-year',cy);
 }
@@ -1381,6 +1471,5 @@ function populateAllSelects(){
   if(_fbUrl){const b=document.getElementById('sync-status-badge');if(b){b.className='sync-status sync-ok';b.innerHTML='<span class="sync-dot ok"></span>Firebase conectado'}}
 })();
 </script>
-</div>
 </body>
 </html>
