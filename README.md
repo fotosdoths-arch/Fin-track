@@ -1,4 +1,4 @@
-[index.html](https://github.com/user-attachments/files/28481263/index.html)
+[index.html](https://github.com/user-attachments/files/28937346/index.html)
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -625,7 +625,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
     <div class="form-row"><label class="form-label">Descrição</label><input class="form-input" id="f-desc" placeholder="Ex: Salário, Aluguel, Mercado..."></div>
     <div class="form-row-2">
-      <div class="form-row" style="margin-bottom:0"><label class="form-label">Valor (R$)</label><input class="form-input" id="f-amount" type="number" min="0.01" step="0.01" placeholder="0,00"></div>
+      <div class="form-row" style="margin-bottom:0"><label class="form-label">Valor (R$)</label><input class="form-input" id="f-amount" type="number" step="0.01" placeholder="0,00"><div id="f-amount-hint" style="font-size:11px;color:var(--text3);margin-top:4px;display:none">Valor negativo: usado para abater de "a receber" (débito sobre receita)</div></div>
       <div class="form-row" style="margin-bottom:0"><label class="form-label">Data</label><input class="form-input" id="f-date" type="date"></div>
     </div>
     <div class="form-row" style="margin-top:13px">
@@ -711,7 +711,29 @@ async function loadAll(){
     _cats=catsR?JSON.parse(catsR):JSON.parse(JSON.stringify(DEFAULT_CATS));
     _imports=impsR?JSON.parse(impsR):[];
     _fbUrl=fbR||'';
+    await migrateDoacaoToExpense();
   }catch{}
+}
+
+// Migração: categorias "Doação" criadas anteriormente como receita passam a ser despesa
+async function migrateDoacaoToExpense(){
+  const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  let changed=false;
+  const doacaoIncomeCats=_cats.income.filter(c=>/doa[cç][aã]o/.test(norm(c.name)));
+  if(doacaoIncomeCats.length){
+    doacaoIncomeCats.forEach(c=>{
+      _cats.income=_cats.income.filter(x=>x.id!==c.id);
+      if(!_cats.expense.find(x=>x.id===c.id)) _cats.expense.push(c);
+      changed=true;
+    });
+  }
+  const doacaoIds=new Set(_cats.expense.filter(c=>/doa[cç][aã]o/.test(norm(c.name))).map(c=>c.id));
+  if(doacaoIds.size){
+    _db.transactions.forEach(t=>{
+      if(doacaoIds.has(t.category)&&t.type==='income'){t.type='expense';changed=true}
+    });
+  }
+  if(changed){await saveCats(_cats);await saveDB(_db)}
 }
 function loadCats(){return _cats}
 function loadDB(){return _db}
@@ -832,6 +854,17 @@ function setType(type){
   document.getElementById('f-cat').value='';
   document.getElementById('f-cat-search').value='';
   renderCatDropdown('');
+  // mostra dica de valor negativo apenas para receita
+  document.getElementById('f-amount-hint').style.display=type==='income'?'block':'none';
+  // parcelamento só faz sentido para despesas
+  const pRow=document.getElementById('f-parceled').closest('.form-row');
+  if(type==='income'){
+    document.getElementById('f-parceled').checked=false;
+    document.getElementById('f-parcelas-row').style.display='none';
+    pRow.style.display='none';
+  } else if(!document.getElementById('f-editing-id').value){
+    pRow.style.display='block';
+  }
 }
 function getAllCatsForType(type){const c=loadCats();return[...c[type].map(x=>({...x,_primary:true})),...c[type==='expense'?'income':'expense'].map(x=>({...x,_primary:false}))]}
 function renderCatDropdown(filter){
@@ -869,7 +902,8 @@ async function saveTransaction(){
   const amount=parseFloat(document.getElementById('f-amount').value);
   const date=document.getElementById('f-date').value;
   const cat=document.getElementById('f-cat').value;
-  if(!desc||!amount||!date||amount<=0){alert('Preencha todos os campos.');return}
+  if(!desc||!date||isNaN(amount)||amount===0){alert('Preencha todos os campos.');return}
+  if(currentType==='expense'&&amount<0){alert('Despesas devem ter valor positivo.');return}
   if(!cat){alert('Selecione uma categoria.');return}
   const db=loadDB();
   const editingId=document.getElementById('f-editing-id').value;
@@ -1216,7 +1250,10 @@ function handleFile(file){
         if(!dateStr){skipped.push(idx);return}
         const tipoN=norm(rawTipo);let type='expense';
         if(/recebid|entrada|receita|income/.test(tipoN))type='income';
-        const deptN=norm(rawDept);let catId=null;
+        const deptN=norm(rawDept);
+        // Doação é sempre despesa, independente do tipo marcado na planilha
+        if(/doa[cç][aã]o/.test(deptN)) type='expense';
+        let catId=null;
         for(const c of allEx){const cn=norm(c.name);if(deptN===cn){catId=c.id;break}if(deptN.length>=4&&cn.length>=4&&(deptN.startsWith(cn.slice(0,5))||cn.startsWith(deptN.slice(0,5)))){catId=c.id;break}}
         if(!catId){catId='imp_'+slugify(rawDept);if(!newCatMap[catId])newCatMap[catId]={id:catId,name:rawDept.trim(),type,icon:'🏷️',color:randomColor()}}
         const uid=`${dateStr}_${amount}_${catId}_${(rawDesc||rawDept).slice(0,12).replace(/\s/g,'_')}`;
