@@ -1,4 +1,4 @@
-[index.html](https://github.com/user-attachments/files/28937346/index.html)
+[index.html](https://github.com/user-attachments/files/28937707/index.html)
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1254,7 +1254,9 @@ function handleFile(file){
         // Doação é sempre despesa, independente do tipo marcado na planilha
         if(/doa[cç][aã]o/.test(deptN)) type='expense';
         let catId=null;
-        for(const c of allEx){const cn=norm(c.name);if(deptN===cn){catId=c.id;break}if(deptN.length>=4&&cn.length>=4&&(deptN.startsWith(cn.slice(0,5))||cn.startsWith(deptN.slice(0,5)))){catId=c.id;break}}
+        // Apenas correspondência EXATA (normalizada) — evita confundir categorias parecidas
+        // como "Receber" vs "Recebidos" ou "Presente" vs "Presentes"
+        for(const c of allEx){if(deptN===norm(c.name)){catId=c.id;break}}
         if(!catId){catId='imp_'+slugify(rawDept);if(!newCatMap[catId])newCatMap[catId]={id:catId,name:rawDept.trim(),type,icon:'🏷️',color:randomColor()}}
         const uid=`${dateStr}_${amount}_${catId}_${(rawDesc||rawDept).slice(0,12).replace(/\s/g,'_')}`;
         parsed.push({id:uid,type,description:rawDesc||rawDept,amount,date:dateStr,category:catId});
