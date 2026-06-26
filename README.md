@@ -1,4 +1,4 @@
-[index.html](https://github.com/user-attachments/files/28937707/index.html)
+[index.html](https://github.com/user-attachments/files/29380572/index.html)
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -775,7 +775,12 @@ function populateMonthSelect(id,cur){
 }
 function populateYearSelect(id,cur){
   const sel=document.getElementById(id);if(!sel)return;
-  sel.innerHTML=getYears().map(y=>`<option value="${y}"${y===cur?' selected':''}>${y}</option>`).join('');
+  // preserva o ano atualmente selecionado, se existir
+  const selected=sel.value?parseInt(sel.value):cur;
+  const years=getYears();
+  // se o ano selecionado não existe na lista nova, usa o preferido (cur)
+  const chosen=years.includes(selected)?selected:cur;
+  sel.innerHTML=years.map(y=>`<option value="${y}"${y===chosen?' selected':''}>${y}</option>`).join('');
 }
 function filterTx(txs,month,year){
   return txs.filter(t=>{const d=new Date(t.date+'T12:00');return d.getFullYear()===year&&(month===-1||d.getMonth()===month)});
@@ -940,12 +945,12 @@ async function saveTransaction(){
   }
   db.transactions.sort((a,b)=>new Date(b.date)-new Date(a.date));
   await saveDBAndSync(db);
-  closeModal();refreshAll();
+  closeModal();populateAllSelects();refreshAll();
 }
 async function delTx(id){
   if(!confirm('Excluir esta transação?'))return;
   const db=loadDB();db.transactions=db.transactions.filter(t=>t.id!==id);
-  await saveDBAndSync(db);refreshAll();
+  await saveDBAndSync(db);populateAllSelects();refreshAll();
 }
 
 // ===================== DASHBOARD =====================
