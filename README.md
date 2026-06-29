@@ -1,4 +1,4 @@
-[index.html](https://github.com/user-attachments/files/29380572/index.html)
+[index.html](https://github.com/user-attachments/files/29463556/index.html)
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1130,28 +1130,41 @@ function renderInsights(){
     return{name,income,expense,balance:income-expense,count:txs.length};
   });
   const totInc=months.reduce((s,m)=>s+m.income,0),totExp=months.reduce((s,m)=>s+m.expense,0);
-  // top individual tx
+  // top individual tx — maior receita positiva
   const topInc=allTxs.filter(t=>t.type==='income').sort((a,b)=>b.amount-a.amount)[0];
   const topExp=allTxs.filter(t=>t.type==='expense').sort((a,b)=>b.amount-a.amount)[0];
   document.getElementById('ins-top-income').textContent=topInc?fmt(topInc.amount):'—';
   document.getElementById('ins-top-income-sub').textContent=topInc?topInc.description+' · '+new Date(topInc.date+'T12:00').toLocaleDateString('pt-BR'):'Nenhuma receita';
   document.getElementById('ins-top-expense').textContent=topExp?fmt(topExp.amount):'—';
   document.getElementById('ins-top-expense-sub').textContent=topExp?topExp.description+' · '+new Date(topExp.date+'T12:00').toLocaleDateString('pt-BR'):'Nenhuma despesa';
-  const actMths=months.filter(m=>m.income>0);
-  const avgSave=actMths.length?actMths.reduce((s,m)=>s+(m.income>0?(m.balance/m.income)*100:0),0)/actMths.length:0;
+  // meses com movimentação de receita (inclusive negativos)
+  const actMths=months.filter(m=>m.count>0&&allTxs.filter(t=>t.type==='income'&&new Date(t.date+'T12:00').getMonth()===months.indexOf(m)).length>0);
+  const avgSave=actMths.length?actMths.reduce((s,m)=>s+(m.income!==0?(m.balance/Math.abs(m.income))*100:0),0)/actMths.length:0;
   document.getElementById('ins-save-rate').textContent=avgSave.toFixed(1)+'%';
   document.getElementById('ins-save-rate').style.color=avgSave>=0?'var(--green)':'var(--red)';
   document.getElementById('ins-save-sub').textContent='Média dos meses com receita';
-  // ranking meses
+  // ranking meses despesa
   const rankExp=months.filter(m=>m.expense>0).sort((a,b)=>b.expense-a.expense);
   const maxExp=rankExp[0]?.expense||1;
   document.getElementById('ins-rank-expense').innerHTML=rankExp.slice(0,6).map((m,i)=>`<div class="rank-row"><div class="rank-num">${i+1}</div><div style="font-size:13px;color:var(--text2);min-width:70px">${m.name.substring(0,3)}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${(m.expense/maxExp*100).toFixed(0)}%;background:var(--red)"></div></div><div style="font-family:DM Mono;font-size:12px;color:var(--red);min-width:90px;text-align:right">${fmt(m.expense)}</div></div>`).join('')||'<div class="empty">Sem dados</div>';
-  const rankInc=months.filter(m=>m.income>0).sort((a,b)=>b.income-a.income);
-  const maxInc=rankInc[0]?.income||1;
-  document.getElementById('ins-rank-income').innerHTML=rankInc.slice(0,6).map((m,i)=>`<div class="rank-row"><div class="rank-num">${i+1}</div><div style="font-size:13px;color:var(--text2);min-width:70px">${m.name.substring(0,3)}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${(m.income/maxInc*100).toFixed(0)}%;background:var(--green)"></div></div><div style="font-family:DM Mono;font-size:12px;color:var(--green);min-width:90px;text-align:right">${fmt(m.income)}</div></div>`).join('')||'<div class="empty">Sem dados</div>';
-  // % por categoria
+  // ranking meses receita — inclui meses com receita negativa (count>0)
+  const rankInc=months.filter(m=>{
+    const mIdx=MONTHS.indexOf(m.name);
+    return allTxs.filter(t=>t.type==='income'&&new Date(t.date+'T12:00').getMonth()===mIdx).length>0;
+  }).sort((a,b)=>b.income-a.income);
+  const maxIncAbs=Math.max(...rankInc.map(m=>Math.abs(m.income)),1);
+  document.getElementById('ins-rank-income').innerHTML=rankInc.slice(0,6).map((m,i)=>{
+    const color=m.income<0?'var(--amber)':'var(--green)';
+    return`<div class="rank-row"><div class="rank-num">${i+1}</div><div style="font-size:13px;color:var(--text2);min-width:70px">${m.name.substring(0,3)}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${(Math.abs(m.income)/maxIncAbs*100).toFixed(0)}%;background:${color}"></div></div><div style="font-family:DM Mono;font-size:12px;color:${color};min-width:90px;text-align:right">${m.income<0?'−':''}${fmt(m.income)}</div></div>`;
+  }).join('')||'<div class="empty">Sem dados</div>';
+  // % por categoria despesa
   const cats=loadCats();
   const catData=cats.expense.map(c=>({cat:c,total:allTxs.filter(t=>t.type==='expense'&&t.category===c.id).reduce((s,t)=>s+t.amount,0)})).filter(x=>x.total>0).sort((a,b)=>b.total-a.total);
+  // categorias de receita com transações (inclusive negativas)
+  const incCatData=cats.income.map(c=>{
+    const catTxs=allTxs.filter(t=>t.type==='income'&&t.category===c.id);
+    return{cat:c,total:catTxs.reduce((s,t)=>s+t.amount,0),count:catTxs.length};
+  }).filter(x=>x.count>0).sort((a,b)=>b.total-a.total);
   chartInsCat=dc(chartInsCat);
   if(catData.length){
     chartInsCat=new Chart(document.getElementById('chart-ins-cat'),{type:'doughnut',data:{labels:catData.map(x=>x.cat.name),datasets:[{data:catData.map(x=>x.total),backgroundColor:catData.map(x=>x.cat.color),borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+fmt(ctx.raw)+' ('+(totExp>0?(ctx.raw/totExp*100).toFixed(1):0)+'%)'}}}}});
@@ -1159,7 +1172,10 @@ function renderInsights(){
   document.getElementById('ins-cat-detail').innerHTML=catData.map(x=>{
     const pct=totExp>0?(x.total/totExp*100).toFixed(1):0;
     return`<div class="rank-row"><div style="width:10px;height:10px;border-radius:50%;background:${x.cat.color};flex-shrink:0"></div><div style="font-size:13px;flex:1">${x.cat.icon} ${x.cat.name}</div><div style="font-size:11px;color:var(--text3);margin-right:8px">${pct}%</div><div style="font-family:DM Mono;font-size:12px;color:var(--red)">${fmt(x.total)}</div></div>`;
-  }).join('')||'<div class="empty">Sem despesas no período</div>';
+  }).join('')+(incCatData.length?'<div style="padding:10px 0 4px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Receitas por categoria</div>'+incCatData.map(x=>{
+    const color=x.total<0?'var(--amber)':'var(--green)';
+    return`<div class="rank-row"><div style="width:10px;height:10px;border-radius:50%;background:${x.cat.color};flex-shrink:0"></div><div style="font-size:13px;flex:1">${x.cat.icon} ${x.cat.name}</div><div style="font-family:DM Mono;font-size:12px;color:${color}">${x.total<0?'−':''}${fmt(x.total)}</div></div>`;
+  }).join(''):'')||'<div class="empty">Sem dados no período</div>';
 }
 
 // ===================== CATEGORIAS =====================
@@ -1173,9 +1189,20 @@ function renderCategorias(){
     :filterTx(db.transactions,month,year);
   const cats=loadCats();
   function makeBars(type,cid){
-    const total=txs.filter(t=>t.type===type).reduce((s,t)=>s+t.amount,0);
-    const data=cats[type].map(c=>({cat:c,total:txs.filter(t=>t.type===type&&t.category===c.id).reduce((s,t)=>s+t.amount,0)})).filter(x=>x.total>0).sort((a,b)=>b.total-a.total);
-    document.getElementById(cid).innerHTML=!data.length?'<div class="empty" style="padding:16px">Sem dados</div>':data.map(x=>{const pct=total>0?Math.round((x.total/total)*100):0;return`<div class="cat-row"><div class="cat-name-col">${x.cat.icon} ${x.cat.name}</div><div class="cat-bar-wrap"><div class="cat-bar" style="width:${pct}%;background:${x.cat.color}"></div></div><div class="cat-amt">${fmt(x.total)}</div><div class="cat-pct">${pct}%</div></div>`}).join('');
+    const grossTotal=txs.filter(t=>t.type===type).reduce((s,t)=>s+Math.abs(t.amount),0);
+    const data=cats[type].map(c=>{
+      const catTxs=txs.filter(t=>t.type===type&&t.category===c.id);
+      const total=catTxs.reduce((s,t)=>s+t.amount,0);
+      const count=catTxs.length;
+      return{cat:c,total,count};
+    // Para receita: mostra mesmo se total negativo (tem transações); para despesa: só se >0
+    }).filter(x=>type==='income'?x.count>0:x.total>0).sort((a,b)=>b.total-a.total);
+    document.getElementById(cid).innerHTML=!data.length?'<div class="empty" style="padding:16px">Sem dados</div>':data.map(x=>{
+      const pct=grossTotal>0?Math.round((Math.abs(x.total)/grossTotal)*100):0;
+      const amtColor=type==='income'&&x.total<0?'var(--amber)':'inherit';
+      const sign=type==='income'&&x.total<0?'−':'';
+      return`<div class="cat-row"><div class="cat-name-col">${x.cat.icon} ${x.cat.name}</div><div class="cat-bar-wrap"><div class="cat-bar" style="width:${pct}%;background:${x.cat.color}"></div></div><div class="cat-amt" style="color:${amtColor}">${sign}${fmt(x.total)}</div><div class="cat-pct">${pct}%</div></div>`;
+    }).join('');
   }
   makeBars('expense','cat-expense-bars');makeBars('income','cat-income-bars');
   const expTotal=txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
@@ -1192,12 +1219,18 @@ function renderCategorias(){
 function renderAnual(){
   const year=parseInt(document.getElementById('anual-year')?.value??new Date().getFullYear());
   const db=loadDB();
+  const allTxs=db.transactions.filter(t=>new Date(t.date+'T12:00').getFullYear()===year);
   const months=MONTHS.map((name,m)=>{const txs=filterTx(db.transactions,m,year);const income=txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);const expense=txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);return{name,income,expense,balance:income-expense,count:txs.length}});
   const totI=months.reduce((s,m)=>s+m.income,0),totE=months.reduce((s,m)=>s+m.expense,0),totB=totI-totE;
   document.getElementById('anual-income').textContent=fmt(totI);document.getElementById('anual-expense').textContent=fmt(totE);document.getElementById('anual-balance').textContent=fmt(totB);document.getElementById('anual-balance').style.color=totB>=0?'var(--green)':'var(--red)';
   chartAnual=dc(chartAnual);
   chartAnual=new Chart(document.getElementById('chart-anual'),{type:'bar',data:{labels:MONTHS_SHORT,datasets:[{label:'Receitas',data:months.map(x=>x.income),backgroundColor:'rgba(34,211,160,0.7)',borderRadius:4},{label:'Despesas',data:months.map(x=>x.expense),backgroundColor:'rgba(245,101,101,0.7)',borderRadius:4},{type:'line',label:'Saldo',data:months.map(x=>x.balance),borderColor:'rgba(96,165,250,0.9)',backgroundColor:'transparent',borderWidth:2,pointRadius:3,tension:0.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b93a8'}},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b93a8',callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}}}});
-  document.getElementById('anual-tbody').innerHTML=months.map(m=>{const bc=m.balance>=0?'var(--green)':'var(--red)';return`<tr style="border-bottom:1px solid var(--border);${!m.count?'opacity:.35':''}"><td style="padding:11px 18px;font-weight:500">${m.name}</td><td style="padding:11px 18px;text-align:right;color:var(--green);font-family:DM Mono;font-size:12px">${m.income>0?fmt(m.income):'—'}</td><td style="padding:11px 18px;text-align:right;color:var(--red);font-family:DM Mono;font-size:12px">${m.expense>0?fmt(m.expense):'—'}</td><td style="padding:11px 18px;text-align:right;color:${bc};font-family:DM Mono;font-size:12px">${m.count?fmt(m.balance):'—'}</td><td style="padding:11px 18px;text-align:right;color:var(--text2)">${m.count||'—'}</td></tr>`}).join('');
+  document.getElementById('anual-tbody').innerHTML=months.map(m=>{
+    const bc=m.balance>=0?'var(--green)':'var(--red)';
+    const incColor=m.income<0?'var(--amber)':'var(--green)';
+    const hasIncome=allTxs.filter(t=>t.type==='income'&&new Date(t.date+'T12:00').getFullYear()===year&&new Date(t.date+'T12:00').getMonth()===months.indexOf(m)).length>0;
+    return`<tr style="border-bottom:1px solid var(--border);${!m.count?'opacity:.35':''}"><td style="padding:11px 18px;font-weight:500">${m.name}</td><td style="padding:11px 18px;text-align:right;color:${incColor};font-family:DM Mono;font-size:12px">${hasIncome?fmt(m.income):'—'}</td><td style="padding:11px 18px;text-align:right;color:var(--red);font-family:DM Mono;font-size:12px">${m.expense>0?fmt(m.expense):'—'}</td><td style="padding:11px 18px;text-align:right;color:${bc};font-family:DM Mono;font-size:12px">${m.count?fmt(m.balance):'—'}</td><td style="padding:11px 18px;text-align:right;color:var(--text2)">${m.count||'—'}</td></tr>`;
+  }).join('');
   populateCatAnualSelect();renderCatAnual();
 }
 function populateCatAnualSelect(){
@@ -1365,7 +1398,8 @@ function renderCatManager(){
     el.innerHTML=cats[type].map(c=>{
       const total=totals[c.id]||0;
       const inUse=db.transactions.some(t=>t.category===c.id);
-      const totalBadge=total?`<span class="cat-total-badge">${fmt(total)}</span>`:'';
+      const totalColor=total<0?'var(--amber)':total>0?'var(--green)':'var(--text3)';
+      const totalBadge=inUse?`<span class="cat-total-badge" style="color:${totalColor}">${total<0?'−':''}${fmt(total)}</span>`:'';
       const editBtn=`<button class="cat-item-edit-btn" onclick="toggleCatEdit('${type}','${c.id}')" title="Editar">✏️</button>`;
       const delBtn=!inUse&&!c.builtin?`<button class="cat-item-del" onclick="deleteCat('${type}','${c.id}')">✕</button>`:'';
       return`<div>
