@@ -1,4 +1,4 @@
-[index.html](https://github.com/user-attachments/files/29463556/index.html)
+[index.html](https://github.com/user-attachments/files/29798953/index.html)
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -164,6 +164,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .insight-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .insight-value{font-size:20px;font-weight:600;font-family:'DM Mono',monospace}
 .insight-sub{font-size:11px;color:var(--text2);margin-top:4px}
+/* Comparativo */
+.cmp-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.cmp-up{background:rgba(34,211,160,0.15);color:var(--green)}
+.cmp-down{background:rgba(245,101,101,0.15);color:var(--red)}
+.cmp-flat{background:var(--bg3);color:var(--text3)}
+.cmp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.cmp-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.cmp-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.cmp-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.cmp-year-label{font-size:11px;color:var(--text2)}
+.cmp-value{font-family:'DM Mono',monospace;font-size:13px;font-weight:500}
+.cmp-divider{height:1px;background:var(--border);margin:8px 0}
 .rank-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
 .rank-row:last-child{border-bottom:none}
 .rank-num{width:22px;height:22px;border-radius:50%;background:var(--bg3);color:var(--text2);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -229,6 +241,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="nav-item active" data-section="dashboard" onclick="showSection('dashboard')"><span class="nav-icon">📊</span><span>Dashboard</span></div>
     <div class="nav-item" data-section="transacoes" onclick="showSection('transacoes')"><span class="nav-icon">↕️</span><span>Transações</span></div>
     <div class="nav-item" data-section="evolucao" onclick="showSection('evolucao')"><span class="nav-icon">📈</span><span>Evolução</span></div>
+    <div class="nav-item" data-section="comparativo" onclick="showSection('comparativo')"><span class="nav-icon">🔄</span><span>Comparativo</span></div>
     <div class="nav-item" data-section="insights" onclick="showSection('insights')"><span class="nav-icon">🔍</span><span>Insights</span></div>
     <div class="nav-item" data-section="categorias" onclick="showSection('categorias')"><span class="nav-icon">🏷️</span><span>Categorias</span></div>
     <div class="nav-item" data-section="anual" onclick="showSection('anual')"><span class="nav-icon">📅</span><span>Visão Anual</span></div>
@@ -345,6 +358,82 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="chart-card">
       <div class="chart-header"><div class="chart-title">Médias mensais</div></div>
       <div id="ev-medias" style="padding:4px 0"></div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARATIVO ANO ANTERIOR -->
+<section id="sec-comparativo" class="section">
+  <div class="page-header">
+    <div><div class="page-title">Comparativo</div><div class="page-sub" id="cmp-subtitle">Período atual vs ano anterior</div></div>
+    <div class="hdr-actions">
+      <select class="period-select" id="cmp-mode" onchange="renderComparativo()">
+        <option value="ytd">Acumulado no ano (Jan–mês atual)</option>
+        <option value="month">Mês específico</option>
+        <option value="full">Ano completo</option>
+      </select>
+      <select class="period-select" id="cmp-month" onchange="renderComparativo()" style="display:none"></select>
+      <select class="period-select" id="cmp-year" onchange="renderComparativo()"></select>
+    </div>
+  </div>
+
+  <!-- Cards resumo -->
+  <div class="cmp-grid">
+    <div class="cmp-card">
+      <div class="cmp-label">Receitas</div>
+      <div class="cmp-row"><span class="cmp-year-label" id="cmp-year-cur-label">2025</span><span class="cmp-value" id="cmp-inc-cur" style="color:var(--green)">—</span></div>
+      <div class="cmp-row"><span class="cmp-year-label" id="cmp-year-prev-label">2024</span><span class="cmp-value" id="cmp-inc-prev" style="color:var(--text3)">—</span></div>
+      <div class="cmp-divider"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:12px;color:var(--text2)">Variação</span>
+        <span id="cmp-inc-badge">—</span>
+      </div>
+    </div>
+    <div class="cmp-card">
+      <div class="cmp-label">Despesas</div>
+      <div class="cmp-row"><span class="cmp-year-label" id="cmp-year-cur-label2">2025</span><span class="cmp-value" id="cmp-exp-cur" style="color:var(--red)">—</span></div>
+      <div class="cmp-row"><span class="cmp-year-label" id="cmp-year-prev-label2">2024</span><span class="cmp-value" id="cmp-exp-prev" style="color:var(--text3)">—</span></div>
+      <div class="cmp-divider"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:12px;color:var(--text2)">Variação</span>
+        <span id="cmp-exp-badge">—</span>
+      </div>
+    </div>
+    <div class="cmp-card">
+      <div class="cmp-label">Saldo</div>
+      <div class="cmp-row"><span class="cmp-year-label" id="cmp-year-cur-label3">2025</span><span class="cmp-value" id="cmp-bal-cur">—</span></div>
+      <div class="cmp-row"><span class="cmp-year-label" id="cmp-year-prev-label3">2024</span><span class="cmp-value" id="cmp-bal-prev" style="color:var(--text3)">—</span></div>
+      <div class="cmp-divider"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:12px;color:var(--text2)">Variação</span>
+        <span id="cmp-bal-badge">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico comparativo mês a mês -->
+  <div class="chart-card" style="margin-bottom:18px">
+    <div class="chart-header">
+      <div class="chart-title" id="cmp-chart-title">Despesas mês a mês — ano atual vs anterior</div>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-dot" style="background:var(--red)"></span><span id="cmp-legend-cur">2025</span></span>
+        <span class="legend-item"><span class="legend-dot" style="background:rgba(245,101,101,0.3)"></span><span id="cmp-legend-prev">2024</span></span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span><span id="cmp-legend-inc-cur">Receita 2025</span></span>
+        <span class="legend-item"><span class="legend-dot" style="background:rgba(34,211,160,0.3)"></span><span id="cmp-legend-inc-prev">Receita 2024</span></span>
+      </div>
+    </div>
+    <div style="position:relative;height:300px"><canvas id="chart-comparativo"></canvas></div>
+  </div>
+
+  <!-- Comparativo por categoria -->
+  <div class="content-grid">
+    <div class="chart-card">
+      <div class="chart-header"><div class="chart-title">Despesas por categoria — comparativo</div></div>
+      <div id="cmp-cat-list" class="cat-list"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><div class="chart-title">Maiores variações</div></div>
+      <div id="cmp-variations"></div>
     </div>
   </div>
 </section>
@@ -805,6 +894,7 @@ function showSection(name){
   if(name==='dashboard')updateDashboard();
   if(name==='transacoes')renderTxList();
   if(name==='evolucao')renderEvolucao();
+  if(name==='comparativo')renderComparativo();
   if(name==='insights')renderInsights();
   if(name==='categorias')renderCategorias();
   if(name==='anual')renderAnual();
@@ -1401,7 +1491,7 @@ function renderCatManager(){
       const totalColor=total<0?'var(--amber)':total>0?'var(--green)':'var(--text3)';
       const totalBadge=inUse?`<span class="cat-total-badge" style="color:${totalColor}">${total<0?'−':''}${fmt(total)}</span>`:'';
       const editBtn=`<button class="cat-item-edit-btn" onclick="toggleCatEdit('${type}','${c.id}')" title="Editar">✏️</button>`;
-      const delBtn=!inUse&&!c.builtin?`<button class="cat-item-del" onclick="deleteCat('${type}','${c.id}')">✕</button>`:'';
+      const delBtn=`<button class="cat-item-del" onclick="deleteCat('${type}','${c.id}')" title="Excluir">✕</button>`;
       return`<div>
         <div class="cat-item-row" id="crow-${c.id}">
           <div class="cat-color-dot" style="background:${c.color}"></div>
@@ -1452,9 +1542,14 @@ async function addCat(type){
 }
 async function deleteCat(type,id){
   const cats=loadCats(),cat=cats[type].find(c=>c.id===id);
-  if(cat?.builtin){alert('Categorias padrão não podem ser excluídas.');return}
-  if(loadDB().transactions.some(t=>t.category===id)&&!confirm(`"${cat?.name}" está em uso. Excluir mesmo assim?`))return;
-  cats[type]=cats[type].filter(c=>c.id!==id);await saveCats(cats);renderCatManager();
+  const inUse=loadDB().transactions.some(t=>t.category===id);
+  if(inUse){
+    if(!confirm(`A categoria "${cat?.name}" tem transações registradas.\nAs transações existentes manterão a referência à categoria, mas ela não aparecerá mais nos filtros.\n\nExcluir mesmo assim?`))return;
+  } else if(cat?.builtin){
+    if(!confirm(`"${cat?.name}" é uma categoria padrão. Deseja excluí-la mesmo assim?`))return;
+  }
+  cats[type]=cats[type].filter(c=>c.id!==id);
+  await saveCats(cats);renderCatManager();
 }
 
 // ===================== CLOUD =====================
@@ -1540,6 +1635,158 @@ function populateAllSelects(){
   populateYearSelect('cat-year',cy);
   populateYearSelect('anual-year',cy);populateYearSelect('exp-year',cy);
   populateYearSelect('ev-year',cy);populateYearSelect('ins-year',cy);
+  populateMonthSelect('cmp-month',cm);populateYearSelect('cmp-year',cy);
+}
+
+// ===================== COMPARATIVO =====================
+let chartComparativo=null;
+
+function renderComparativo(){
+  const mode=document.getElementById('cmp-mode')?.value||'ytd';
+  const year=parseInt(document.getElementById('cmp-year')?.value??new Date().getFullYear());
+  const prevYear=year-1;
+  const cmpMonthSel=document.getElementById('cmp-month');
+  if(cmpMonthSel) cmpMonthSel.style.display=mode==='month'?'inline-block':'none';
+  const selMonth=mode==='month'?parseInt(cmpMonthSel?.value??new Date().getMonth()):null;
+  const db=loadDB();
+
+  // Define which months to include
+  const now=new Date();
+  const maxMonth=mode==='ytd'?(year===now.getFullYear()?now.getMonth():11):11;
+
+  function getTxsForPeriod(y,months){
+    return db.transactions.filter(t=>{
+      const d=new Date(t.date+'T12:00');
+      return d.getFullYear()===y&&months.includes(d.getMonth());
+    });
+  }
+
+  let monthRange=[];
+  if(mode==='month') monthRange=[selMonth];
+  else if(mode==='ytd') monthRange=Array.from({length:maxMonth+1},(_,i)=>i);
+  else monthRange=Array.from({length:12},(_,i)=>i);
+
+  const curTxs=getTxsForPeriod(year,monthRange);
+  const prevTxs=getTxsForPeriod(prevYear,monthRange);
+
+  const curInc=curTxs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const curExp=curTxs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const curBal=curInc-curExp;
+  const prevInc=prevTxs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const prevExp=prevTxs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const prevBal=prevInc-prevExp;
+
+  // subtitle
+  const modeLabel=mode==='ytd'?`Jan–${MONTHS_SHORT[maxMonth]}`:(mode==='month'?MONTHS[selMonth]:'Ano completo');
+  document.getElementById('cmp-subtitle').textContent=`${modeLabel} ${year} vs ${modeLabel} ${prevYear}`;
+
+  // update labels
+  ['','2','3'].forEach(s=>{
+    const cl=document.getElementById('cmp-year-cur-label'+s);
+    const pl=document.getElementById('cmp-year-prev-label'+s);
+    if(cl)cl.textContent=year;if(pl)pl.textContent=prevYear;
+  });
+
+  // fill cards
+  function setBadge(id,cur,prev,invertGood){
+    const el=document.getElementById(id);if(!el)return;
+    if(!prev){el.innerHTML='<span class="cmp-badge cmp-flat">—</span>';return}
+    const pct=((cur-prev)/Math.abs(prev)*100);
+    const up=cur>prev;
+    // for expenses: up is bad; for income/balance: up is good
+    const good=invertGood?!up:up;
+    const cls=Math.abs(pct)<0.5?'cmp-flat':good?'cmp-up':'cmp-down';
+    const arrow=Math.abs(pct)<0.5?'→':up?'↑':'↓';
+    el.innerHTML=`<span class="cmp-badge ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}%</span>`;
+  }
+
+  document.getElementById('cmp-inc-cur').textContent=fmt(curInc);
+  document.getElementById('cmp-inc-prev').textContent=fmt(prevInc);
+  setBadge('cmp-inc-badge',curInc,prevInc,false);
+
+  document.getElementById('cmp-exp-cur').textContent=fmt(curExp);
+  document.getElementById('cmp-exp-prev').textContent=fmt(prevExp);
+  setBadge('cmp-exp-badge',curExp,prevExp,true);
+
+  document.getElementById('cmp-bal-cur').textContent=fmt(curBal);
+  document.getElementById('cmp-bal-cur').style.color=curBal>=0?'var(--green)':'var(--red)';
+  document.getElementById('cmp-bal-prev').textContent=fmt(prevBal);
+  setBadge('cmp-bal-badge',curBal,prevBal,false);
+
+  // legend labels
+  document.getElementById('cmp-legend-cur').textContent='Despesa '+year;
+  document.getElementById('cmp-legend-prev').textContent='Despesa '+prevYear;
+  document.getElementById('cmp-legend-inc-cur').textContent='Receita '+year;
+  document.getElementById('cmp-legend-inc-prev').textContent='Receita '+prevYear;
+
+  // Chart: mês a mês dentro do período
+  const labels=mode==='month'?[MONTHS[selMonth]]:monthRange.map(m=>MONTHS_SHORT[m]);
+  const curExpByMonth=monthRange.map(m=>getTxsForPeriod(year,[m]).filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0));
+  const prevExpByMonth=monthRange.map(m=>getTxsForPeriod(prevYear,[m]).filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0));
+  const curIncByMonth=monthRange.map(m=>getTxsForPeriod(year,[m]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0));
+  const prevIncByMonth=monthRange.map(m=>getTxsForPeriod(prevYear,[m]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0));
+
+  chartComparativo=dc(chartComparativo);
+  chartComparativo=new Chart(document.getElementById('chart-comparativo'),{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Despesa '+year,data:curExpByMonth,backgroundColor:'rgba(245,101,101,0.8)',borderRadius:3},
+        {label:'Despesa '+prevYear,data:prevExpByMonth,backgroundColor:'rgba(245,101,101,0.25)',borderRadius:3},
+        {type:'line',label:'Receita '+year,data:curIncByMonth,borderColor:'rgba(34,211,160,0.9)',backgroundColor:'transparent',borderWidth:2,pointRadius:3,tension:0.3},
+        {type:'line',label:'Receita '+prevYear,data:prevIncByMonth,borderColor:'rgba(34,211,160,0.3)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[4,3],pointRadius:2,tension:0.3},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b93a8'}},
+              y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b93a8',callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}}}
+  });
+
+  // Category comparison
+  const cats=loadCats();
+  const allCatIds=[...cats.expense,...cats.income].map(c=>c.id);
+  const catRows=cats.expense.map(c=>{
+    const cur=curTxs.filter(t=>t.type==='expense'&&t.category===c.id).reduce((s,t)=>s+t.amount,0);
+    const prev=prevTxs.filter(t=>t.type==='expense'&&t.category===c.id).reduce((s,t)=>s+t.amount,0);
+    return{cat:c,cur,prev,diff:cur-prev,pct:prev>0?((cur-prev)/prev*100):null};
+  }).filter(x=>x.cur>0||x.prev>0).sort((a,b)=>b.cur-a.cur);
+
+  const maxCat=Math.max(...catRows.map(r=>Math.max(r.cur,r.prev)),1);
+  document.getElementById('cmp-cat-list').innerHTML=catRows.map(r=>{
+    const pctCur=Math.round(r.cur/maxCat*100);
+    const pctPrev=Math.round(r.prev/maxCat*100);
+    const diffColor=r.diff>0?'var(--red)':r.diff<0?'var(--green)':'var(--text3)';
+    const diffSign=r.diff>0?'+':'';
+    return`<div style="padding:10px 20px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+        <span style="font-size:13px">${r.cat.icon} ${r.cat.name}</span>
+        <span style="font-size:11px;color:${diffColor};font-family:DM Mono">${diffSign}${fmt(r.diff)}</span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:3px">
+        <span style="font-size:10px;color:var(--text3);width:28px">${year}</span>
+        <div style="flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="width:${pctCur}%;height:100%;background:${r.cat.color};border-radius:3px"></div></div>
+        <span style="font-size:11px;font-family:DM Mono;color:var(--red);min-width:80px;text-align:right">${r.cur>0?fmt(r.cur):'—'}</span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span style="font-size:10px;color:var(--text3);width:28px">${prevYear}</span>
+        <div style="flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="width:${pctPrev}%;height:100%;background:${r.cat.color};border-radius:3px;opacity:.35"></div></div>
+        <span style="font-size:11px;font-family:DM Mono;color:var(--text2);min-width:80px;text-align:right">${r.prev>0?fmt(r.prev):'—'}</span>
+      </div>
+    </div>`;
+  }).join('')||'<div class="empty">Sem dados para comparar</div>';
+
+  // Maiores variações
+  const variations=catRows.filter(r=>r.prev>0&&r.cur>0&&r.pct!==null).sort((a,b)=>Math.abs(b.pct)-Math.abs(a.pct)).slice(0,8);
+  document.getElementById('cmp-variations').innerHTML=variations.map(r=>{
+    const up=r.diff>0;
+    const cls=up?'cmp-down':'cmp-up'; // expenses: up is bad
+    return`<div class="rank-row">
+      <div style="font-size:16px">${r.cat.icon}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.cat.name}</div><div style="font-size:11px;color:var(--text2)">${fmt(r.prev)} → ${fmt(r.cur)}</div></div>
+      <span class="cmp-badge ${cls}">${up?'↑':'↓'} ${Math.abs(r.pct).toFixed(1)}%</span>
+    </div>`;
+  }).join('')||'<div class="empty">Sem variações para exibir</div>';
 }
 
 // ===================== INIT =====================
