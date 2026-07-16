@@ -1961,29 +1961,56 @@ function isExcludedFromProjection(catName){
   return PAT_EXCLUDED_PATTERNS.some(p=>p.test(n));
 }
 
-async function fetchFocusSelic(){
+// Busca série BCB com fallback via proxy CORS
+async function fetchBCBSerie(serie){
+  // Tenta direto primeiro (funciona em localhost e alguns hosts)
+  const direct=`https://api.bcb.gov.br/dados/serie/bcdata.sgs.${serie}/dados/ultimos/12?formato=json`;
+  // Fallback via proxy CORS público
+  const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(direct)}`;
+
+  // Tenta direto
   try{
-    const r=await fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.13521/dados/ultimos/12?formato=json');
-    const data=await r.json();
-    if(data&&data.length){
-      // pega a mais recente
-      const val=parseFloat(data[data.length-1].valor);
-      return val;
+    const r=await fetch(direct,{signal:AbortSignal.timeout?AbortSignal.timeout(6000):undefined});
+    if(r.ok){
+      const data=await r.json();
+      if(Array.isArray(data)&&data.length){
+        return parseFloat(String(data[data.length-1].valor).replace(',','.'));
+      }
     }
   }catch{}
+
+  // Fallback proxy
+  try{
+    const r=await fetch(proxy);
+    if(r.ok){
+      const wrapper=await r.json();
+      if(wrapper.contents){
+        const data=JSON.parse(wrapper.contents);
+        if(Array.isArray(data)&&data.length){
+          return parseFloat(String(data[data.length-1].valor).replace(',','.'));
+        }
+      }
+    }
+  }catch{}
+
   return null;
 }
 
+async function fetchFocusSelic(){
+  // Série 4390 = Meta SELIC definida pelo Copom (% a.a.) - mais estável
+  // Série 432  = SELIC acumulada no mês (% a.m.) - precisa converter
+  // Usamos 4390 que já vem em % a.a.
+  const val=await fetchBCBSerie(4390);
+  return val;
+}
+
 async function fetchFocusIPCA(){
-  try{
-    const r=await fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.13522/dados/ultimos/12?formato=json');
-    const data=await r.json();
-    if(data&&data.length){
-      const val=parseFloat(data[data.length-1].valor);
-      return val;
-    }
-  }catch{}
-  return null;
+  // Série 13522 = IPCA acumulado 12 meses esperado (Focus)
+  // Série 433   = IPCA acumulado mês (% a.m.) - precisa converter
+  // Fallback: série 4175 = expectativa IPCA 12 meses
+  let val=await fetchBCBSerie(13522);
+  if(val==null) val=await fetchBCBSerie(4175);
+  return val;
 }
 
 async function renderPatrimonio(){
@@ -2042,21 +2069,26 @@ async function renderPatrimonio(){
   if(selicVal!=null){
     const selicInput=document.getElementById('pat-selic');
     if(!selicInput.value) selicInput.value=selicVal.toFixed(2);
-    document.getElementById('pat-selic-hint').textContent=`Focus BCB: ${selicVal.toFixed(2)}% a.a.`;
-    selicBadge.className='pat-api-badge pat-api-ok'; selicBadge.textContent=`✓ SELIC ${selicVal.toFixed(2)}%`;
+    document.getElementById('pat-selic-hint').textContent=`BCB (Meta Copom): ${selicVal.toFixed(2)}% a.a.`;
+    selicBadge.className='pat-api-badge pat-api-ok'; selicBadge.textContent=`✓ SELIC ${selicVal.toFixed(2)}% a.a.`;
   } else {
-    selicBadge.className='pat-api-badge pat-api-err'; selicBadge.textContent='✗ Erro ao buscar SELIC';
-    document.getElementById('pat-selic-hint').textContent='Insira manualmente';
+    selicBadge.className='pat-api-badge pat-api-err'; selicBadge.textContent='✗ API indisponível';
+    document.getElementById('pat-selic-hint').textContent='Consulte bcb.gov.br e insira manualmente (ex: 13.75)';
+    // Sugestão do valor atual baseado no contexto (2026)
+    const selicInput=document.getElementById('pat-selic');
+    if(!selicInput.value) selicInput.placeholder='Ex: 13.75';
   }
 
   if(ipcaVal!=null){
     const ipcaInput=document.getElementById('pat-ipca');
     if(!ipcaInput.value) ipcaInput.value=ipcaVal.toFixed(2);
-    document.getElementById('pat-ipca-hint').textContent=`Focus BCB: ${ipcaVal.toFixed(2)}% a.a.`;
-    ipcaBadge.className='pat-api-badge pat-api-ok'; ipcaBadge.textContent=`✓ IPCA ${ipcaVal.toFixed(2)}%`;
+    document.getElementById('pat-ipca-hint').textContent=`BCB (Focus 12m): ${ipcaVal.toFixed(2)}% a.a.`;
+    ipcaBadge.className='pat-api-badge pat-api-ok'; ipcaBadge.textContent=`✓ IPCA ${ipcaVal.toFixed(2)}% a.a.`;
   } else {
-    ipcaBadge.className='pat-api-badge pat-api-err'; ipcaBadge.textContent='✗ Erro ao buscar IPCA';
-    document.getElementById('pat-ipca-hint').textContent='Insira manualmente';
+    ipcaBadge.className='pat-api-badge pat-api-err'; ipcaBadge.textContent='✗ API indisponível';
+    document.getElementById('pat-ipca-hint').textContent='Consulte bcb.gov.br e insira manualmente (ex: 5.50)';
+    const ipcaInput=document.getElementById('pat-ipca');
+    if(!ipcaInput.value) ipcaInput.placeholder='Ex: 5.50';
   }
 
   // guarda base para o cálculo
